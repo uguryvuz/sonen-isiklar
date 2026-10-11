@@ -3,25 +3,35 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<meta name="theme-color" content="#14101f">
 <title>Kateřina ve Sönen Işıklar</title>
-<link href="https://fonts.googleapis.com/css2?family=VT323&display=swap" rel="stylesheet">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<!-- Yazı tipi oyunu engellemesin: yavaş/kapalı internette sayfa beklemeden açılır, font gelince değişir -->
+<link href="https://fonts.googleapis.com/css2?family=VT323&display=swap" rel="stylesheet" media="print" onload="this.media='all'">
+<noscript><link href="https://fonts.googleapis.com/css2?family=VT323&display=swap" rel="stylesheet"></noscript>
 <style>
 :root{--bg:#14101f;--panel:#1d1730;--line:#4a3d6e;--ink:#fff3df;--gold:#ffd84a;--dark:#2b1b2e;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
 html{scroll-padding-top:env(safe-area-inset-top,0px)}
 *{touch-action:none}
-html,body{height:100%;margin:0;background:var(--bg);color:var(--ink);font:22px/1.15 'VT323','Courier New',monospace;overflow:hidden;user-select:none;-webkit-user-select:none;-webkit-touch-callout:none;-webkit-tap-highlight-color:transparent;overscroll-behavior:none}
+html,body{height:100%;margin:0;background:var(--bg);color:var(--ink);font:22px/1.15 'VT323','Courier New',monospace;overflow:hidden;user-select:none;-webkit-user-select:none;-webkit-touch-callout:none;-webkit-tap-highlight-color:transparent;overscroll-behavior:none;-webkit-text-size-adjust:100%;text-size-adjust:100%}
 [hidden]{display:none!important}
 #app{position:relative;height:100%;max-width:480px;margin:0 auto;display:flex;flex-direction:column}
 #view{position:relative;flex:1;min-height:0;overflow:hidden;background:var(--bg)}
 canvas{display:block;image-rendering:crisp-edges;image-rendering:pixelated}
 button{font:inherit;color:inherit;border:0;cursor:pointer}
-#hud{position:absolute;left:8px;top:8px;padding:3px 10px;background:#1d1730dd;border:3px solid var(--ink);box-shadow:3px 3px 0 #000}
+/* Üst şerit: bölge adı + sayaç solda, Defter düğmesi sağda; dar ekranda bölge adı kısalır (…), düğmeyle çakışmaz */
+#top{position:absolute;left:8px;right:8px;top:8px;z-index:2;display:flex;align-items:flex-start;justify-content:space-between;gap:8px;pointer-events:none}
+#hud{display:flex;align-items:center;min-width:0;box-sizing:border-box;padding:3px 10px;background:#1d1730dd;border:3px solid var(--ink);box-shadow:3px 3px 0 #000;pointer-events:auto}
+#rg{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 #obj{position:absolute;left:8px;top:52px;padding:2px 8px;background:#1d1730cc;border:2px solid var(--line);font-size:19px;white-space:pre;color:var(--gold)}
-#nbb{position:absolute;right:8px;top:8px;padding:3px 10px;background:#1d1730dd;border:3px solid var(--ink);box-shadow:3px 3px 0 #000}
-#nb{position:absolute;inset:0;z-index:5;padding:16px;background:#14101ff2;overflow:auto;white-space:pre-wrap;font-size:24px}
-#cnt{display:inline-block;color:var(--gold)}#cnt.b{animation:bump .35s}
+#nbb{flex:none;pointer-events:auto;padding:3px 10px;background:#1d1730dd;border:3px solid var(--ink);box-shadow:3px 3px 0 #000}
+#nb{position:absolute;inset:0;z-index:5;display:flex;flex-direction:column;background:#14101f;font-size:24px}
+#nbh{flex:none;display:flex;align-items:center;justify-content:space-between;gap:8px;padding:10px 12px;border-bottom:3px solid var(--line);color:var(--gold)}
+#nbx{padding:3px 14px;background:var(--gold);color:var(--dark);border:3px solid var(--dark);box-shadow:3px 3px 0 #000}
+#nbt{flex:1;min-height:0;overflow-y:auto;padding:12px 16px 24px;white-space:pre-wrap;overscroll-behavior:contain}
+#cnt{display:inline-block;flex:none;margin-left:8px;color:var(--gold)}#cnt.b{animation:bump .35s}
 @keyframes bump{50%{transform:scale(1.7)}}
-.gem{display:inline-block;width:9px;height:9px;margin-right:9px;background:var(--gold);transform:rotate(45deg);box-shadow:0 0 6px var(--gold)}
+.gem{display:inline-block;flex:none;width:9px;height:9px;margin-right:9px;background:var(--gold);transform:rotate(45deg);box-shadow:0 0 6px var(--gold)}
 #toast{position:absolute;left:50%;top:58px;transform:translate(-50%,-10px);opacity:0;padding:4px 12px;background:var(--gold);color:var(--dark);border:3px solid var(--dark);box-shadow:3px 3px 0 #000;text-align:center;transition:.3s;pointer-events:none;max-width:88%}
 #toast.show{opacity:1;transform:translate(-50%,0)}
 #dlg{position:absolute;left:8px;right:8px;bottom:10px;min-height:88px;padding:16px 14px 20px;background:#1d1730f2;border:3px solid var(--ink);box-shadow:0 0 0 3px #000;font-size:24px}
@@ -41,18 +51,29 @@ button{font:inherit;color:inherit;border:0;cursor:pointer}
 #go,#again{padding:6px 36px;font-size:34px;background:var(--gold);color:var(--dark);border:4px solid var(--dark);box-shadow:inset -4px -4px 0 #e0a82e,0 5px 0 #000}
 #go:active,#again:active{transform:translateY(3px)}
 #end h1{margin:0;font-size:60px;color:var(--gold);text-shadow:4px 4px 0 #000}#end p{margin:0;max-width:280px;color:#cfc4ee}
+/* Yatay tutulan telefonda oyun alanı çok daralır: "telefonu dik tut" uyarısı */
+#rot{display:none;position:fixed;inset:0;z-index:99;flex-direction:column;align-items:center;justify-content:center;gap:16px;padding:24px;text-align:center;background:var(--bg);color:var(--gold);font-size:30px}
+#rot p{margin:0;font-size:22px;color:#cfc4ee}
+#rotp{width:30px;height:52px;border:4px solid var(--gold);border-radius:6px;box-shadow:3px 3px 0 #000;animation:rt 1.6s steps(1) infinite}
+@keyframes rt{0%{transform:rotate(90deg)}50%{transform:rotate(0)}}
+@media (orientation:landscape) and (max-height:520px) and (pointer:coarse){#rot{display:flex}}
 </style>
 </head>
 <body>
 <div id="app">
   <div id="view">
     <canvas id="cv"></canvas>
-    <div id="hud"><i class="gem"></i><span id="rg"></span> <b id="cnt">0/3</b></div>
+    <div id="top">
+      <div id="hud"><i class="gem"></i><span id="rg"></span> <b id="cnt">0/3</b></div>
+      <button id="nbb">Defter</button>
+    </div>
     <div id="obj" hidden></div>
-    <button id="nbb">Defter</button>
     <div id="toast"></div>
     <div id="dlg" hidden><div id="dn"></div><div id="dtxt"></div><i id="arrow"></i></div>
-    <div id="nb" hidden></div>
+    <div id="nb" hidden>
+      <div id="nbh"><span>KATEŘINA'NIN DEFTERİ</span><button id="nbx">Kapat</button></div>
+      <div id="nbt"></div>
+    </div>
   </div>
   <div id="pad">
     <div id="joy"><div id="stick"></div></div>
@@ -70,12 +91,13 @@ button{font:inherit;color:inherit;border:0;cursor:pointer}
     <button id="go">Başla</button>
   </div>
 </div>
+<div id="rot"><div id="rotp"></div>Telefonu dik tut<p>Oyun dikey ekranda oynanır.</p></div>
 
 <script>
 "use strict";
 const $ = id => document.getElementById(id), clamp = (v, a, b) => Math.max(a, Math.min(b, v));
-const cv = $('cv'), ctx = cv.getContext('2d'), view = $('view');
-let W = 130, H = 200, scale = 3, mode = 'title', T = 0; // mode: title | play | dialog | notebook
+const cv = $('cv'), ctx = cv.getContext('2d', { alpha: false }), view = $('view');
+let W = 130, H = 200, scale = 3, DS = 3, mode = 'title', T = 0; // W,H: mantıksal piksel; scale: ekranda 1 mantıksal pikselin CSS boyutu; DS: tuvalde 1 mantıksal pikselin gerçek piksel sayısı // mode: title | play | dialog | notebook
 
 /* ===== 1) PALET VE SPRITE YARDIMCILARI ===== */
 // Her harf bir renk, '.' şeffaf. Sprite'lar metin matrisi olarak yazılır.
@@ -431,15 +453,22 @@ function gain() { // ışık parçası kazan: toplam + bölge sayacı
 }
 const nb = $('nb'), ITEMNAME = { anahtar: 'Kayıkhane anahtarı', kibrit: 'Kibrit kutusu', odun: 'Odun', disli: 'Dişli', kayis: 'Değirmen kayışı' };
 function note(t) { if (!S.notes.includes(t)) { S.notes.push(t); toast('Deftere not yazıldı'); } } // ipucu defteri
+const nbt = $('nbt');
 function nbToggle() { // Defteri aç/kapat: eşyalar + ipuçları
   if (mode === 'notebook') { nb.hidden = true; mode = 'play'; }
   else if (mode === 'play') {
     mode = 'notebook'; nb.hidden = false;
-    nb.textContent = "KATEŘINA'NIN DEFTERİ\n\nİpuçları:\n" + (S.notes.map(n => '• ' + n).join('\n') || '(henüz yok)') + '\n\n[kapatmak için dokun]';
+    nbt.textContent = 'İpuçları:\n' + (S.notes.map(n => '• ' + n).join('\n') || '(henüz yok)');
+    nbt.scrollTop = 0;
   }
 }
 $('nbb').addEventListener('pointerdown', e => { e.preventDefault(); nbToggle(); });
-nb.addEventListener('pointerdown', e => { e.preventDefault(); nbToggle(); });
+$('nbx').addEventListener('pointerdown', e => { e.preventDefault(); nbToggle(); });
+// Defter uzun olunca kaydırılabilsin: sayfada her yerde touch-action:none olduğu için parmakla kaydırmayı kendimiz yapıyoruz
+let nbd = null;
+nbt.addEventListener('pointerdown', e => { nbd = { id: e.pointerId, y: e.clientY, top: nbt.scrollTop }; nbt.setPointerCapture(e.pointerId); e.preventDefault(); });
+nbt.addEventListener('pointermove', e => { if (nbd && e.pointerId === nbd.id) nbt.scrollTop = nbd.top - (e.clientY - nbd.y); });
+['pointerup', 'pointercancel'].forEach(ev => nbt.addEventListener(ev, e => { if (nbd && e.pointerId === nbd.id) nbd = null; }));
 
 /* ===== 8) GİRDİ: joystick, buton, klavye ===== */
 const joy = { x: 0, y: 0 }, keys = { l: 0, r: 0, u: 0, d: 0 };
@@ -453,7 +482,10 @@ function jmove(e) {
 base.addEventListener('pointerdown', e => { jid = e.pointerId; base.setPointerCapture(jid); jmove(e); e.preventDefault(); });
 base.addEventListener('pointermove', e => { if (e.pointerId === jid) jmove(e); });
 const jend = e => { if (e.pointerId === jid) { jid = null; joy.x = joy.y = 0; stick.style.transform = ''; } };
-base.addEventListener('pointerup', jend); base.addEventListener('pointercancel', jend);
+base.addEventListener('pointerup', jend); base.addEventListener('pointercancel', jend); base.addEventListener('lostpointercapture', jend);
+function resetInput() { jid = null; joy.x = joy.y = 0; stick.style.transform = ''; keys.l = keys.r = keys.u = keys.d = 0; } // takılı kalan joystick/tuş olmasın
+addEventListener('blur', resetInput);
+document.addEventListener('visibilitychange', () => { if (document.hidden) resetInput(); });
 
 function act() { // Etkileşim: başlat / diyaloğu ilerlet / defteri kapat / yakındakiyle konuş
   if (mode === 'title') start();
@@ -472,11 +504,20 @@ addEventListener('keydown', e => {
 addEventListener('keyup', e => { if (KM[e.key]) keys[KM[e.key]] = 0; });
 ['gesturestart', 'contextmenu'].forEach(ev => document.addEventListener(ev, e => e.preventDefault()));
 
+// Joystick: ölü bölge girişte geniş, çıkışta dar (histerezis) olduğu için parmak eşikte titrese de karakter açılıp kapanmaz.
+// Hız ölü bölge kenarında 0'dan başlayıp yumuşakça artar; eksene yakın yönler (~22° içinde) eksene oturur: dört yönlü oyunda başparmakla düz yürümek ve sandık itmek kolaylaşır.
+const DZ_ON = .22, DZ_OFF = .14; let stickOn = false;
 function inputVec() {
   const x = joy.x + keys.r - keys.l, y = joy.y + keys.d - keys.u, m = Math.hypot(x, y);
-  if (m < .3) return [0, 0];
-  return m > 1 ? [x / m, y / m] : [x, y];
+  if (m < (stickOn ? DZ_OFF : DZ_ON)) { stickOn = false; return [0, 0]; }
+  stickOn = true;
+  const mag = clamp((m - DZ_OFF) / (.9 - DZ_OFF), 0, 1); // başparmak kenara varmasa da tam hız
+  let ux = x / m, uy = y / m;
+  if (Math.abs(uy) < .4 * Math.abs(ux)) { uy = 0; ux = Math.sign(ux); }
+  else if (Math.abs(ux) < .4 * Math.abs(uy)) { ux = 0; uy = Math.sign(uy); }
+  return [ux * mag, uy * mag];
 }
+const DIRV = [[0, 1], [0, -1], [-1, 0], [1, 0]]; // yön: 0 aşağı, 1 yukarı, 2 sol, 3 sağ
 
 /* ===== 9) GÜNCELLEME ===== */
 function update(dt) {
@@ -484,18 +525,23 @@ function update(dt) {
   if (S.flash > 0) S.flash -= dt;
   simTick(dt); updObj();
   if (mode === 'play') {
-    const [ix, iy] = inputVec();
+    let [ix, iy] = inputVec();
     let pushing = false;
     if (ix || iy) {
+      // Bakış yönü: köşegene yakın bırakılan joystickte sprite sağ-sol/yukarı-aşağı titremesin diye eksen, diğer eksen belirgin biçimde (%30) baskın olmadan değişmez
+      const ax = Math.abs(ix), ay = Math.abs(iy); let horiz = P.dir >= 2;
+      if (horiz ? ay > ax * 1.3 : ax > ay * 1.3) horiz = !horiz;
+      P.dir = horiz ? (ix < 0 ? 2 : 3) : (iy < 0 ? 1 : 0);
+      // Sandık itme: sandığa doğru 0.3 sn yürürsen 1 kare kayar (arkası boşsa). İterken yan kayma kilitlenir, başparmak hafif eğilse de sandık düz gider
+      const [dx, dy] = DIRV[P.dir];
+      const b = BOXES.find(o => o.tx === Math.floor((P.x + dx * 8) / 16) && o.ty === Math.floor((P.y - 3 + dy * 6) / 16));
+      const canPush = b && !solidAt((b.tx + dx) * 16 + 8, (b.ty + dy) * 16 + 8);
+      if (canPush) { if (dx) iy = 0; else ix = 0; }
       const sp = 56 * dt;
       let nx = P.x + ix * sp; if (!hit(nx, P.y)) P.x = nx;      // eksenleri ayrı dene: duvara sürtünerek kayar
       let ny = P.y + iy * sp; if (!hit(P.x, ny)) P.y = ny;
-      P.dir = Math.abs(ix) > Math.abs(iy) ? (ix < 0 ? 2 : 3) : (iy < 0 ? 1 : 0);
       P.t += dt;
-      // Sandık itme: sandığa doğru 0.3 sn yürürsen 1 kare kayar (arkası boşsa)
-      const dx = Math.abs(ix) > Math.abs(iy) ? Math.sign(ix) : 0, dy = dx ? 0 : Math.sign(iy);
-      const b = BOXES.find(o => o.tx === Math.floor((P.x + dx * 8) / 16) && o.ty === Math.floor((P.y - 3 + dy * 6) / 16));
-      if (b && !solidAt((b.tx + dx) * 16 + 8, (b.ty + dy) * 16 + 8)) {
+      if (canPush) {
         pushing = true; P.pt += dt;
         if (P.pt > .3) { b.tx += dx; b.ty += dy; P.pt = 0; }
       }
@@ -513,20 +559,29 @@ function update(dt) {
 
 /* ===== 10) ÇİZİM ===== */
 function draw() {
-  const mw = MAP[0].length * 16, mh = MAP.length * 16;
-  const rx = Math.round(P.x), ry = Math.round(P.y); // kamera ve sprite AYNI tam sayı konumdan hesaplanır (ayrı ayrı yuvarlanırsa karakter 1 piksel titrer)
-  cam.x = Math.round(mw <= W ? (mw - W) / 2 : clamp(rx - W / 2, 0, mw - W)); // kamera Kateřina'yı takip eder
-  cam.y = Math.round(mh <= H ? (mh - H) / 2 : clamp(ry - 8 - H / 2, 0, mh - H));
-  R(ctx, '#14101f', 0, 0, W, H);
-  const x0 = Math.max(0, cam.x >> 4), x1 = Math.min(MAP[0].length - 1, (cam.x + W) >> 4), y0 = Math.max(0, cam.y >> 4), y1 = Math.min(MAP.length - 1, (cam.y + H) >> 4);
-  for (let ty = y0; ty <= y1; ty++) for (let tx = x0; tx <= x1; tx++) { const t = TL[MAP[ty][tx]]; if (t) ctx.drawImage(t, tx * 16 - cam.x, ty * 16 - cam.y); }
+  // PÜRÜZSÜZ HAREKET: tuval artık ekranın gerçek çözünürlüğünde (DS = 1 mantıksal pikselin cihaz pikseli sayısı).
+  // Eskiden kamera ve karakter 1 mantıksal piksel (3-9 ekran pikseli) adımlarla yuvarlanıyordu; yavaş yürürken kareler arası adım 0-1 arasında
+  // gidip geldiği için görüntü sürekli sekiyordu. Şimdi her şey TAMSAYI cihaz pikselinde hesaplanır: adımlar küçük, eşit ve çatlaksız.
+  const vw = W * DS, vh = H * DS, mwd = MAP[0].length * 16 * DS, mhd = MAP.length * 16 * DS;
+  const pxd = Math.round(P.x * DS), pyd = Math.round(P.y * DS);
+  const cxd = mwd <= vw ? Math.round((mwd - vw) / 2) : clamp(pxd - Math.round(vw / 2), 0, mwd - vw); // kamera Kateřina'yı takip eder
+  const cyd = mhd <= vh ? Math.round((mhd - vh) / 2) : clamp(pyd - 8 * DS - Math.round(vh / 2), 0, mhd - vh);
+  cam.x = cxd / DS; cam.y = cyd / DS;
+  const rx = pxd / DS, ry = pyd / DS; // kamera ve karakter AYNI tamsayı konumdan türer: aralarında titreşim olamaz
+  const blit = (img, wx, wy) => ctx.drawImage(img, Math.round(wx * DS) - cxd, Math.round(wy * DS) - cyd, img.width * DS, img.height * DS); // dünya konumu -> tam cihaz pikseli
+  ctx.setTransform(1, 0, 0, 1, 0, 0); ctx.imageSmoothingEnabled = false;
+  ctx.fillStyle = '#14101f'; ctx.fillRect(0, 0, vw, vh);
+  const T16 = 16 * DS, cols = MAP[0].length, rows = MAP.length;
+  const x0 = Math.max(0, Math.floor(cxd / T16)), x1 = Math.min(cols - 1, Math.floor((cxd + vw - 1) / T16)), y0 = Math.max(0, Math.floor(cyd / T16)), y1 = Math.min(rows - 1, Math.floor((cyd + vh - 1) / T16));
+  for (let ty = y0; ty <= y1; ty++) for (let tx = x0; tx <= x1; tx++) { const t = TL[MAP[ty][tx]]; if (t) ctx.drawImage(t, tx * T16 - cxd, ty * T16 - cyd, T16, T16); }
   // Varlıklar alttakiler öne gelecek şekilde sıralanıp çizilir
   const fr = P.t > 0 ? [1, 0, 2, 0][Math.floor(P.t / .14) % 4] : 0;
-  const E = [{ y: P.y, f: () => ctx.drawImage(KATS[P.dir][fr], rx - 6 - cam.x, ry - 15 - cam.y) }];
-  NPCS.forEach(n => E.push({ y: n.y, f: () => { const s = n.s || CATS[Math.floor(T * 2) % 2]; ctx.drawImage(s, Math.round(n.x - s.width / 2 - cam.x), Math.round(n.y - s.height + 1 - cam.y)); } }));
-  vis().forEach(i => E.push({ y: i.y, f: () => ctx.drawImage(i.s || SH, Math.round(i.x - 4 - cam.x), Math.round(i.y - 4 - cam.y + Math.sin(T * 3) * 2)) }));
-  BOXES.forEach(b => E.push({ y: b.ty * 16 + 14, f: () => ctx.drawImage(TL.X, b.tx * 16 - cam.x, b.ty * 16 - cam.y) }));
+  const E = [{ y: P.y, f: () => blit(KATS[P.dir][fr], rx - 6, ry - 15) }];
+  NPCS.forEach(n => E.push({ y: n.y, f: () => { const s = n.s || CATS[Math.floor(T * 2) % 2]; blit(s, Math.round(n.x - s.width / 2), Math.round(n.y - s.height + 1)); } }));
+  vis().forEach(i => E.push({ y: i.y, f: () => blit(i.s || SH, i.x - 4, i.y - 4 + Math.sin(T * 3) * 2) }));
+  BOXES.forEach(b => E.push({ y: b.ty * 16 + 14, f: () => blit(TL.X, b.tx * 16, b.ty * 16) }));
   E.sort((a, b) => a.y - b.y).forEach(e => e.f());
+  ctx.setTransform(DS, 0, 0, DS, 0, 0); // buradan sonrası (ışık, sis, ok...) mantıksal koordinatla çizilir
   R(ctx, SC.tint, 0, 0, W, H); // akşam tonu
   if (SC.fog) { ctx.fillStyle = 'rgba(225,240,240,.12)'; for (let k = 0; k < 7; k++) ctx.fillRect(((T * 5 + k * 47) % (W + 70)) - 70, (k * 41 + 12) % H, 70, 12); } // sis
   if (SC.dark) { // karanlık sahne: sadece Kateřina'nın çevresi aydınlık
@@ -539,13 +594,13 @@ function draw() {
   ctx.globalAlpha = 1; ctx.globalCompositeOperation = 'source-over';
   if (mode === 'play') { // yakındaki kişi/nesnenin üstünde "!" belirir
     const nt = nearTarget();
-    if (nt) { const ix = Math.round(nt.rect[0] + nt.rect[2] / 2 - cam.x), iy = Math.round(nt.rect[1] - 10 - cam.y + Math.sin(T * 6)); R(ctx, '#fff3df', ix - 3, iy, 6, 8); R(ctx, '#2b1b2e', ix - 1, iy + 1, 2, 4); R(ctx, '#2b1b2e', ix - 1, iy + 6, 2, 1); }
+    if (nt) { const ix = Math.round(nt.rect[0] + nt.rect[2] / 2) - cam.x, iy = Math.round(nt.rect[1] - 10 + Math.sin(T * 6)) - cam.y; R(ctx, '#fff3df', ix - 3, iy, 6, 8); R(ctx, '#2b1b2e', ix - 1, iy + 1, 2, 4); R(ctx, '#2b1b2e', ix - 1, iy + 6, 2, 1); }
   }
   const GL = mode === 'play' && curGoal();
   if (GL) { // bölge bitince yolu gösteren altın ok
     const gx = GL[0] - cam.x, gy = GL[1] - cam.y, sx = clamp(gx, 12, W - 12), sy = clamp(gy, 26, H - 12);
     const inside = gx === sx && gy === sy;
-    ctx.save(); ctx.translate(Math.round(sx), Math.round(inside ? sy - 12 + Math.sin(T * 6) * 2 : sy)); ctx.rotate(inside ? Math.PI / 2 : Math.atan2(gy - sy, gx - sx));
+    ctx.save(); ctx.translate(sx, inside ? sy - 12 + Math.sin(T * 6) * 2 : sy); ctx.rotate(inside ? Math.PI / 2 : Math.atan2(gy - sy, gx - sx));
     ctx.fillStyle = '#2b1b2e'; ctx.beginPath(); ctx.moveTo(8, 0); ctx.lineTo(-5, -7); ctx.lineTo(-5, 7); ctx.fill();
     ctx.fillStyle = '#ffd84a'; ctx.beginPath(); ctx.moveTo(5, 0); ctx.lineTo(-3, -4); ctx.lineTo(-3, 4); ctx.fill(); ctx.restore();
   }
@@ -553,11 +608,12 @@ function draw() {
 }
 
 /* ===== 11) EKRAN BOYUTU VE ANA DÖNGÜ ===== */
-function resize() { // küçük mantıksal çözünürlük, tam sayı katıyla büyütülür (net piksel)
+function resize() { // küçük mantıksal çözünürlük (W x H), ekranda tam sayı katıyla büyür; tuvalin gerçek piksel sayısı ise cihaz çözünürlüğüne yakındır
   const r = view.getBoundingClientRect(); if (!r.width) return;
   scale = clamp(Math.floor(r.width / 120), 2, 4);
   W = Math.ceil(r.width / scale); H = Math.ceil(r.height / scale);
-  cv.width = W; cv.height = H; cv.style.width = W * scale + 'px'; cv.style.height = H * scale + 'px';
+  DS = clamp(Math.round(scale * (window.devicePixelRatio || 1)), scale, 6); // 1 mantıksal piksel = DS tuval pikseli (üst sınır: eski telefonlarda yavaşlamasın)
+  cv.width = W * DS; cv.height = H * DS; cv.style.width = W * scale + 'px'; cv.style.height = H * scale + 'px';
   ctx.imageSmoothingEnabled = false;
 }
 new ResizeObserver(resize).observe(view); addEventListener('resize', resize);
@@ -572,7 +628,13 @@ function showEnd() { // oyun sonu ekranı
 $('again').addEventListener('click', () => location.reload());
 
 let last = 0;
-function loop(t) { const dt = Math.min(.05, (t - last) / 1000 || 0); last = t; update(dt); draw(); requestAnimationFrame(loop); }
+const rotMQ = matchMedia('(orientation: landscape) and (max-height: 520px) and (pointer: coarse)'); // CSS'teki "telefonu dik tut" uyarısıyla aynı koşul
+function loop(t) {
+  const dt = Math.min(.05, (t - last) / 1000 || 0); last = t;
+  if (rotMQ.matches) resetInput(); // yatay ekranda oyun durur
+  else { update(dt); draw(); }
+  requestAnimationFrame(loop);
+}
 loadScene('fener'); resize(); requestAnimationFrame(loop);
 </script>
 </body>
