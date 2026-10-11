@@ -1,0 +1,579 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<title>Kateřina ve Sönen Işıklar</title>
+<link href="https://fonts.googleapis.com/css2?family=VT323&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#14101f;--panel:#1d1730;--line:#4a3d6e;--ink:#fff3df;--gold:#ffd84a;--dark:#2b1b2e;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+*{touch-action:none}
+html,body{height:100%;margin:0;background:var(--bg);color:var(--ink);font:22px/1.15 'VT323','Courier New',monospace;overflow:hidden;user-select:none;-webkit-user-select:none;-webkit-touch-callout:none;-webkit-tap-highlight-color:transparent;overscroll-behavior:none}
+[hidden]{display:none!important}
+#app{position:relative;height:100%;max-width:480px;margin:0 auto;display:flex;flex-direction:column}
+#view{position:relative;flex:1;min-height:0;overflow:hidden;background:var(--bg)}
+canvas{display:block;image-rendering:crisp-edges;image-rendering:pixelated}
+button{font:inherit;color:inherit;border:0;cursor:pointer}
+#hud{position:absolute;left:8px;top:8px;padding:3px 10px;background:#1d1730dd;border:3px solid var(--ink);box-shadow:3px 3px 0 #000}
+#obj{position:absolute;left:8px;top:52px;padding:2px 8px;background:#1d1730cc;border:2px solid var(--line);font-size:19px;white-space:pre;color:var(--gold)}
+#nbb{position:absolute;right:8px;top:8px;padding:3px 10px;background:#1d1730dd;border:3px solid var(--ink);box-shadow:3px 3px 0 #000}
+#nb{position:absolute;inset:0;z-index:5;padding:16px;background:#14101ff2;overflow:auto;white-space:pre-wrap;font-size:24px}
+#cnt{display:inline-block;color:var(--gold)}#cnt.b{animation:bump .35s}
+@keyframes bump{50%{transform:scale(1.7)}}
+.gem{display:inline-block;width:9px;height:9px;margin-right:9px;background:var(--gold);transform:rotate(45deg);box-shadow:0 0 6px var(--gold)}
+#toast{position:absolute;left:50%;top:58px;transform:translate(-50%,-10px);opacity:0;padding:4px 12px;background:var(--gold);color:var(--dark);border:3px solid var(--dark);box-shadow:3px 3px 0 #000;text-align:center;transition:.3s;pointer-events:none;max-width:88%}
+#toast.show{opacity:1;transform:translate(-50%,0)}
+#dlg{position:absolute;left:8px;right:8px;bottom:10px;min-height:88px;padding:16px 14px 20px;background:#1d1730f2;border:3px solid var(--ink);box-shadow:0 0 0 3px #000;font-size:24px}
+#dn{position:absolute;left:10px;top:-17px;padding:0 10px;background:var(--gold);color:var(--dark);border:3px solid var(--dark)}
+#arrow{position:absolute;right:12px;bottom:7px;border:7px solid transparent;border-top-color:var(--gold);border-bottom:0;animation:bl .6s steps(2) infinite}
+@keyframes bl{50%{opacity:0}}
+#pad{flex:none;height:170px;display:flex;align-items:center;justify-content:space-between;padding:0 24px;background:var(--panel);border-top:3px solid var(--line)}
+#joy{position:relative;width:124px;height:124px;border-radius:50%;background:radial-gradient(#2e2550,#1a1430);border:3px solid var(--line)}
+#stick{position:absolute;left:50%;top:50%;width:50px;height:50px;margin:-25px 0 0 -25px;border-radius:50%;background:var(--gold);border:3px solid var(--dark);box-shadow:inset -4px -4px 0 #e0a82e;pointer-events:none}
+#act{width:104px;height:104px;border-radius:50%;font-size:21px;background:var(--gold);color:var(--dark);border:4px solid var(--dark);box-shadow:inset -5px -5px 0 #e0a82e,0 5px 0 #000}
+#act:active{transform:translateY(3px);box-shadow:inset -5px -5px 0 #e0a82e,0 2px 0 #000}
+#title,#end{position:absolute;inset:0;z-index:9;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;text-align:center;padding:20px;background:radial-gradient(circle at 50% 30%,#3a2a66,#14101f 70%)}
+#title h1{margin:0;font-size:50px;line-height:.95;color:var(--gold);text-shadow:4px 4px 0 #000}
+#title h1 small{display:block;font-size:28px;color:var(--ink);margin:4px 0}
+#title p{margin:0;max-width:270px;color:#cfc4ee}
+#tc{width:72px;height:96px;image-rendering:pixelated}
+#go,#again{padding:6px 36px;font-size:34px;background:var(--gold);color:var(--dark);border:4px solid var(--dark);box-shadow:inset -4px -4px 0 #e0a82e,0 5px 0 #000}
+#go:active,#again:active{transform:translateY(3px)}
+#end h1{margin:0;font-size:60px;color:var(--gold);text-shadow:4px 4px 0 #000}#end p{margin:0;max-width:280px;color:#cfc4ee}
+</style>
+</head>
+<body>
+<div id="app">
+  <div id="view">
+    <canvas id="cv"></canvas>
+    <div id="hud"><i class="gem"></i><span id="rg"></span> <b id="cnt">0/3</b></div>
+    <div id="obj" hidden></div>
+    <button id="nbb">Defter</button>
+    <div id="toast"></div>
+    <div id="dlg" hidden><div id="dn"></div><div id="dtxt"></div><i id="arrow"></i></div>
+    <div id="nb" hidden></div>
+  </div>
+  <div id="pad">
+    <div id="joy"><div id="stick"></div></div>
+    <button id="act">Etkileşim</button>
+  </div>
+  <div id="end" hidden>
+    <h1>SON</h1>
+    <p id="endp"></p>
+    <button id="again">Baştan Oyna</button>
+  </div>
+  <div id="title">
+    <canvas id="tc" width="12" height="16"></canvas>
+    <h1>KATEŘINA<small>ve</small>SÖNEN IŞIKLAR</h1>
+    <p>Kasabanın ışıkları birer birer sönüyor. Kaybolan ışık parçalarını bulabilecek misin?</p>
+    <button id="go">Başla</button>
+  </div>
+</div>
+
+<script>
+"use strict";
+const $ = id => document.getElementById(id), clamp = (v, a, b) => Math.max(a, Math.min(b, v));
+const cv = $('cv'), ctx = cv.getContext('2d'), view = $('view');
+let W = 130, H = 200, scale = 3, mode = 'title', T = 0; // mode: title | play | dialog | notebook
+
+/* ===== 1) PALET VE SPRITE YARDIMCILARI ===== */
+// Her harf bir renk, '.' şeffaf. Sprite'lar metin matrisi olarak yazılır.
+const PAL = {o:'#2b1b2e',y:'#ffd84a',Y:'#e0a82e',s:'#ffd9b8',B:'#1c4fc2',b:'#46a3ff',p:'#ff9aa8',m:'#c9475a',r:'#ff6fae',R:'#c2457f',w:'#fff3df',k:'#6b3f2a',c:'#c9c4dc',C:'#9a94b8',e:'#7dffb0',n:'#ff8fa3',g:'#fff8d6',K:'#3a3350',L:'#5a5278',u:'#a8703f',h:'#d9a066'};
+function mk(w, h, f) { const c = document.createElement('canvas'); c.width = w; c.height = h; f(c.getContext('2d')); return c; }
+const R = (x, c, a, b, w, h) => { x.fillStyle = c; x.fillRect(a, b, w, h); };
+const spr = rows => mk(rows[0].length, rows.length, x => rows.forEach((r, j) => [...r].forEach((ch, i) => { if (PAL[ch]) R(x, PAL[ch], i, j, 1, 1); })));
+const flip = rows => rows.map(r => [...r].reverse().join(''));
+
+/* ===== 2) KATEŘINA (12x16): sarı saç, mavi gözler ===== */
+const FR = ['....oooo....','..oyyyyyyo..','.oyYyyyyYyo.','.oyyssssyyo.','.oyssssssyo.','.oysBssBsyo.','.oysbssbsyo.','.oypsmmspyo.','.oyyssssyyo.','.oyywwwwyyo.','.oyrrrrrryo.','.osrrrrrrso.','.orrrrrrrro.','..oRRRRRRo..']; // ön
+const BK = ['....oooo....','..oyyyyyyo..','.oyyyyyyyyo.','.oyYyyyyYyo.','.oyyyyyyyyo.','.oyyyyyyyyo.','.oyyyyyyyyo.','.oyYyyyyYyo.','.oyyyyyyyyo.','.oyyyyyyyyo.','.oyrrrrrryo.','.osrrrrrrso.','.orrrrrrrro.','..oRRRRRRo..']; // arka
+const SD = ['....oooo....','...oyyyyyo..','..oyyyyyyyo.','..oyyssyyyo.','..oysssyyyo.','..osBsyyyyo.','..osbsyyyyo.','..omspyyyyo.','..osssyyyyo.','..oswwyyyyo.','..orrrrryyo.','..orrsrrryo.','..orrrrrrro.','...oRRRRRo..']; // yan (sola bakar)
+// Bacaklar: [duruş, adım A, adım B]
+const LF = [['...ww..ww...','...kk..kk...'],['...kk..ww...','.......kk...'],['...ww..kk...','...kk.......']];
+const LS = [['....ww......','...kkk......'],['...ww..kk...','..kkk.......'],['..kkk..ww...','.......kk...']];
+// KATS[yön][kare]  yön: 0 aşağı, 1 yukarı, 2 sol, 3 sağ
+const KATS = [[FR,LF],[BK,LF],[SD,LS],[SD,LS]].map(([b, l], d) => l.map(lg => { let r = [...b, ...lg]; if (d === 3) r = flip(r); return spr(r); }));
+
+/* ===== 3) KEDİ JERRY (siyah), KÖPEK (kahverengi) VE IŞIK PARÇASI ===== */
+const CAT = ['.oo......oo.','.occoooocco.','.occcccccco.','.ocecccceco.','.occcnnccco.','..occcccco..','..occcccco..','.occCccCcco.','.occcccccco.','.occcccccco.','.occo..occo.'];
+// İki kare: kuyruk aşağı / yukarı. c→K (siyah gövde), C→L (açık ton)
+const CATS = [0, 1].map(f => spr(CAT.map((r, j) => (f ? (j === 7 || j === 8) : (j >= 9)) ? r.slice(0, 11) + 'C' : r).map(r => r.replace(/c/g, 'K').replace(/C/g, 'L'))));
+const DOG = spr(['.kk....kk.','kuukkkkuuk','kuuuuuuuuk','kuouuuuouk','.uuhhhhuu.','.uhhoohhu.','..uhhhhu..','.kuuuuuuk.','.kuuuuuuk.','.kuu..uuk.']);
+const SH = spr(['...yy...','..yggy..','.yggggy.','yggggggy','.yggggy.','..yggy..','...yy...']);
+const GEAR = spr(['..cCCc..','.cCooCc.','CCo..oCC','Co....oC','CCo..oCC','.cCooCc.','..cCCc..']); // dişli
+const BELT = spr(['..kkkk..','.kuuuuk.','ku....uk','ku....uk','ku....uk','.kuuuuk.','..kkkk..']); // kayış
+
+/* ===== 4) ZEMİN / DUVAR KARELERİ (16x16, kodla piksel piksel) ===== */
+const TL = {};
+const grass = x => { R(x,'#3d8c58',0,0,16,16); R(x,'#4aa56a',2,3,1,2); R(x,'#4aa56a',10,9,1,2); R(x,'#2f7a4c',12,3,2,1); R(x,'#2f7a4c',4,12,2,1); R(x,'#4aa56a',13,13,1,2); };
+TL['.'] = mk(16,16,grass);
+TL['*'] = mk(16,16,x => { grass(x); R(x,'#fff3df',4,5,2,2); R(x,'#ffd84a',5,6,1,1); R(x,'#ff9aa8',11,10,2,2); R(x,'#ffd84a',11,10,1,1); });
+TL[','] = mk(16,16,x => { R(x,'#c9a36a',0,0,16,16); R(x,'#b08a54',3,4,3,2); R(x,'#b08a54',10,10,3,2); R(x,'#dcb97e',9,3,2,1); R(x,'#dcb97e',2,12,2,1); });
+TL.T = mk(16,16,x => { grass(x); R(x,'#6b4a2e',6,11,4,5); R(x,'#175a3a',1,2,14,10); R(x,'#2c8a58',3,0,10,4); R(x,'#2c8a58',2,4,6,4); R(x,'#3fa06a',5,1,3,2); R(x,'#175a3a',10,10,5,3); });
+TL['#'] = mk(16,16,x => { R(x,'#7a5a52',0,0,16,16); [3,7,11,15].forEach(y => R(x,'#5c403f',0,y,16,1)); [[4,0],[12,4],[4,8],[12,12]].forEach(([a,b]) => R(x,'#5c403f',a,b,1,3)); R(x,'#94736a',0,0,16,1); });
+TL['='] = mk(16,16,x => { R(x,'#b07a4a',0,0,16,16); [5,10,15].forEach(y => R(x,'#94633a',0,y,16,1)); R(x,'#94633a',5,0,1,5); R(x,'#94633a',11,6,1,4); R(x,'#94633a',3,11,1,4); });
+TL.D = mk(16,16,x => { R(x,'#8a5a34',0,0,16,16); R(x,'#c9a36a',0,12,16,4); R(x,'#6b4a2e',0,0,16,2); });
+TL.F = mk(16,16,x => { grass(x); R(x,'#fff3df',0,5,16,2); R(x,'#fff3df',0,10,16,2); [1,6,11].forEach(a => R(x,'#d9c9a8',a,3,3,11)); });
+TL.G = mk(16,16,x => { grass(x); R(x,'#6b4a2e',0,2,16,12); R(x,'#8a5a34',1,3,14,10); R(x,'#6b4a2e',0,7,16,2); R(x,'#ffd84a',6,6,4,4); R(x,'#2b1b2e',7,7,2,2); }); // kilitli kapı
+TL.k = mk(16,16,x => { R(x,'#5c3a24',0,0,16,16); R(x,'#3a2418',1,1,14,5); R(x,'#3a2418',1,8,14,5); [['#e4574b',2],['#46a3ff',5],['#ffd84a',8],['#7dffb0',10],['#ff9aa8',12]].forEach(([c,a]) => { R(x,c,a,2,2,4); R(x,c,a+1,9,2,4); }); });
+TL.f = mk(16,16,x => { R(x,'#b07a4a',0,0,16,16); R(x,'#6e6a7a',0,0,16,14); R(x,'#4a4658',2,3,12,11); R(x,'#1d1730',3,5,10,9); R(x,'#59546a',5,11,6,2); R(x,'#8a8498',0,0,16,2); }); // sönük şömine
+TL.b = mk(16,16,x => { R(x,'#b07a4a',0,0,16,16); R(x,'#6b4a2e',0,1,16,14); R(x,'#fff3df',1,2,14,5); R(x,'#e4574b',1,7,14,7); R(x,'#a83a3a',1,12,14,2); });
+TL.t = mk(16,16,x => { R(x,'#b07a4a',0,0,16,16); R(x,'#6b4a2e',0,3,16,11); R(x,'#8a5a34',1,4,14,8); R(x,'#c9c4dc',7,2,2,4); R(x,'#9a94b8',7,1,2,1); }); // üstünde sönük mum
+TL.r = mk(16,16,x => { R(x,'#a83a3a',0,0,16,16); R(x,'#e4574b',1,1,14,14); R(x,'#ffd84a',3,3,10,1); R(x,'#ffd84a',3,12,10,1); });
+// Taş fenerler: 1-2-3 sönük, 4-5-6 yanık (kırmızı, mavi, sarı)
+['#e4574b', '#46a3ff', '#ffd84a'].forEach((c, i) => [0, 1].forEach(on => TL[i + 1 + on * 3] = mk(16,16,x => { grass(x); R(x,'#59546a',6,9,4,7); R(x,'#8a8498',4,3,8,7); R(x, on ? c : '#2b2640',5,4,6,5); if (on) R(x,'#fff8d6',7,5,2,2); })));
+// Yeni kareler: su, basma plakası, kilitli kapı, parmaklık, levye (yukarı/aşağı), tabela, sandık
+TL.w = mk(16,16,x => { R(x,'#2f6fb8',0,0,16,16); R(x,'#5aa0e6',2,4,5,1); R(x,'#5aa0e6',9,10,5,1); R(x,'#1f4f94',4,13,6,1); });
+TL.P = mk(16,16,x => { grass(x); R(x,'#59546a',2,2,12,12); R(x,'#8a8498',3,3,10,10); R(x,'#ffd84a',7,7,2,2); });
+TL.Z = mk(16,16,x => { R(x,'#7a5a52',0,0,16,16); R(x,'#8a5a34',2,1,12,15); R(x,'#6b4a2e',2,8,12,1); R(x,'#c9c4dc',10,9,3,3); });
+TL.H = mk(16,16,x => { grass(x); R(x,'#59546a',0,2,16,2); R(x,'#59546a',0,12,16,2); [2,6,10,13].forEach(a => R(x,'#8a8498',a,2,2,12)); });
+TL.V = mk(16,16,x => { R(x,'#7a5a52',0,0,16,16); R(x,'#59546a',6,8,4,6); R(x,'#c9c4dc',7,2,2,7); R(x,'#e4574b',6,1,4,3); });
+TL.v = mk(16,16,x => { R(x,'#7a5a52',0,0,16,16); R(x,'#59546a',6,8,4,6); R(x,'#c9c4dc',7,7,2,7); R(x,'#7dffb0',6,12,4,3); });
+TL.S = mk(16,16,x => { grass(x); R(x,'#6b4a2e',7,8,2,8); R(x,'#b07a4a',2,2,12,8); R(x,'#fff3df',4,4,8,1); R(x,'#fff3df',4,7,6,1); });
+TL.X = mk(16,16,x => { R(x,'#6b4a2e',1,1,14,14); R(x,'#b07a4a',3,3,10,10); R(x,'#8a5a34',3,7,10,2); });
+TL.O = mk(16,16,x => { grass(x); R(x,'#6b4a2e',1,6,14,4); R(x,'#8a5a34',2,10,12,4); R(x,'#c9a36a',2,7,2,2); R(x,'#c9a36a',11,11,2,2); });
+TL.l = mk(16,16,x => { R(x,'#b07a4a',0,0,16,16); R(x,'#6e6a7a',0,0,16,14); R(x,'#4a4658',2,3,12,11); R(x,'#1d1730',3,5,10,9); R(x,'#ffd84a',5,7,6,6); R(x,'#e4574b',6,9,4,4); R(x,'#fff8d6',7,11,2,2); R(x,'#8a8498',0,0,16,2); }); // yanık şömine
+['#e4574b','#46a3ff','#ffd84a'].forEach((c, i) => TL[7 + i] = mk(16,16,x => { R(x,'#5c3a24',0,0,16,16); R(x,'#3a2418',1,1,14,5); R(x,'#3a2418',1,8,14,5); R(x,c,3,2,10,4); R(x,c,3,9,10,4); })); // kitaplık: öne çıkan renk
+TL.M = mk(16,16,x => { R(x,'#7a5a52',0,0,16,16); R(x,'#c9c4dc',2,3,12,10); R(x,'#9a94b8',4,5,8,6); R(x,'#59546a',7,7,2,2); R(x,'#fff3df',0,13,16,3); }); // değirmen taşı
+TL.C = mk(16,16,x => { R(x,'#7a5a52',0,0,16,16); R(x,'#6b4a2e',2,5,12,9); R(x,'#8a5a34',3,6,10,3); R(x,'#ffd84a',7,8,2,3); }); // sandık
+TL.Q = mk(16,16,x => { R(x,'#b07a4a',0,0,16,16); R(x,'#6b4a2e',1,4,14,11); R(x,'#8a5a34',2,5,12,4); R(x,'#a8703f',2,10,12,4); R(x,'#3a2418',2,9,12,1); R(x,'#ffd84a',4,4,2,11); R(x,'#ffd84a',10,4,2,11); R(x,'#ffd84a',7,8,2,3); R(x,'#2b1b2e',8,9,1,1); R(x,'#fff8d6',3,6,1,1); }); // gizli sandık (kapalı)
+TL.q = mk(16,16,x => { R(x,'#b07a4a',0,0,16,16); R(x,'#6b4a2e',1,1,14,3); R(x,'#8a5a34',2,2,12,1); R(x,'#6b4a2e',1,8,14,7); R(x,'#a8703f',2,10,12,4); R(x,'#2b1b2e',2,8,12,2); R(x,'#fff3df',4,4,8,5); R(x,'#c9c4dc',5,6,6,1); R(x,'#ffd84a',4,8,2,7); R(x,'#ffd84a',10,8,2,7); }); // gizli sandık (açık, mektup görünüyor)
+const SOLID = 'TFG#kfbt123456wZHVvS789OlMCQq'; // çarpılan kare harfleri
+
+/* ===== 5) HARİTA VE SAHNE VERİSİ (yeni bölüm = yeni sahne ekle) ===== */
+const KEDI_A = [["Jerry","Miyav... Sonunda geldin, Kateřina."],["Kateřina","Bir dakika... Sen konuşuyor musun?"],["Jerry","Bu evde şaşırılacak çok şey var. Büyükannen giderken fenerin ışığı da söndü."],["Jerry","Bu sefer parçalar kolay bulunmuyor. Evi ve bahçeyi iyice karıştır, ipuçlarına bak!"],["","İpucu: Bulduğun ipuçları Defter'e yazılır."]];
+const HINTS = [[["Jerry","Şömine neden bu kadar soğuk? Yakmak için odun ve kibrit lazım."]],[["Jerry","Masadaki nota baktın mı? Büyükannen kitapları hep aynı sırayla dizerdi."]],[["Jerry","Bahçede parıldayan bir şey var. En kolay parça o!"]]];
+const KEDI_C = [["Jerry","Işık parçasını buldun! Gözlerim hiç yanılmaz."],["Jerry","Daha çok parça var. Bahçede ve evin içinde toplam üç tane saklanıyor. Hepsini bulunca kapı açılır."],["Jerry","Geceleri duvarlardan fısıltılar geliyor ama sen korkma. Herhalde."]];
+const KEDI_E = [["Jerry","Parçalar benden saklanamaz. Bahçeye ve evin içine bir daha bak."]];
+const INTRO = [["Kateřina","Büyükannemin fener evi... Her şey tam bıraktığı gibi."],["Kateřina","Ama kasabadaki ışıklar her gece birer birer sönüyor. Neden?"],["","İpucu: Joystick ile yürü. Yaklaşınca Etkileşim düğmesine bas. Defter düğmesi ipuçlarını ve eşyaları gösterir."]];
+
+const KEDI_D = [["Jerry","Üç parça! Kapı artık seni dinler. Sisli ormana git, Kateřina."]];
+const DOG_A = [["Monty","Hav hav! Işık taşıyan kız... Bu ormanda üç taş fener var."],["Monty","Büyükannen onları hep bir ezgi gibi, belli bir sırayla yakardı. Şimdi sana göstereceğim."],["Monty","Dikkatle izle, sonra aynı sırayla fenerlere dokun. Yanılırsan baştan gösteririm!"]];
+const DOG_B = [["Monty","Hav! Tekrar izle. Sırayı aklında tut."]];
+const DOG_F = [["Monty","Fenerler yandı! Ama ormanda bir parça daha parlıyor. Onu da bul, yol açılsın."]];
+const DOG_C = [["Monty","Hav! Fenerler yandı, sis çekiliyor."],["Monty","Kuzeydeki yol açıldı. Göl kıyısına git, orada eski bir kayıkhane var."]];
+const LAMP = [[9, 3], [12, 3], [6, 3]]; // fener karelerinin yeri: kırmızı, mavi, sarı
+const SCENES = {
+  fener: { name: 'Fener Evi', quota: 3, goal: [160, 292], tint: 'rgba(24,12,64,.2)',
+    map: [
+      'TTTTTTTTTTTTTTTTTTTT',
+      'T..................T',
+      'T..##############..T',
+      'T..#kkk==ff==bb=#..T',
+      'T..#============#..T',
+      'T..#==tt========#..T',
+      'T..#====rrrr====#..T',
+      'T..#====rrrr====#..T',
+      'T..#============#..T',
+      'T..######DD######..T',
+      'T........,,........T',
+      'T..*.....,,.....*..T',
+      'T.T......,,.....O..T',
+      'T........,,..*.....T',
+      'T........,,.....T..T',
+      'T........,,.....*..T',
+      'T..T.....,,........T',
+      'T........,,........T',
+      'TFFFFFFFFGGFFFFFFFFT',
+      'TTTTTTTTTTTTTTTTTTTT'
+    ],
+    start: [10, 7],
+    exits: [{ r: [144, 292, 32, 14], to: 'orman', if: () => S.sc.fener >= 3 }], // kapı açıkken içinden yürüyünce geçilir
+    npcs: [{ tx: 10, ty: 4, lines: () => S.sc.fener >= 3 ? KEDI_D : S.met++ ? HINTS[S.metC++ % 3] : KEDI_A }],
+    items: [{ id: 'isik1', tx: 15, ty: 14 }, { id: 'isik2', tx: 9, ty: 4, show: () => S.flags.fire }, { id: 'isik3', tx: 5, ty: 4, show: () => S.flags.shelf }],
+    things: [
+      { rect: [96, 80, 32, 16], lines: () => { note('Büyükannenin notu: kitaplar gün batımı gibi dizilir: kırmızı, sarı, mavi (soldan sağa).'); return [["","Masada büyükannenin notu: 'Kitaplarım gün batarken gökyüzü gibi dizilir: kırmızı, sarı, mavi.'"]]; } },
+      ...[0, 1, 2].map(k => ({ rect: [64 + 16 * k, 48, 16, 16], lines: () => shelf(k) })), // 3 kitaplık parçası
+      { rect: [208, 48, 32, 16], off: () => S.inv.kibrit || S.flags.fire, lines: () => { S.inv.kibrit = 1; note('Çekmeceden bir kibrit kutusu buldum.'); return [["Kateřina","Çekmecede bir kibrit kutusu var!"]]; } },
+      { rect: [256, 192, 16, 16], off: () => S.inv.odun || S.flags.fire, lines: () => { S.inv.odun = 1; note('Bahçedeki odun yığınından odun aldım.'); return [["Kateřina","Kuru odunlar. Şömine için işe yarar."]]; } },
+      { rect: [144, 48, 32, 16], lines: () => {
+        if (S.flags.fire) return [["","Şömine sıcacık yanıyor."]];
+        if (S.inv.odun && S.inv.kibrit) { S.flags.fire = 1; S.inv.odun = S.inv.kibrit = 0; setTile(9, 3, 'l'); setTile(10, 3, 'l'); S.flash = .5; note('Şömineyi yaktım, küllerin arasından bir ışık parçası çıktı.'); return [["Kateřina","Odunları dizdim, kibriti çaktım... Şömine yandı!"],["","Küllerin arasında bir ışık parçası parlıyor."]]; }
+        note('Şömine soğuk. Yakmak için odun ve kibrit gerek.'); return [["","Soğuk, karanlık bir şömine. Yakmak için odun ve kibrit gerek."]]; } },
+      { rect: [144, 288, 32, 16], off: () => S.sc.fener >= 3, cb: () => S.sc.fener >= 3 && go('orman'),
+      lines: () => S.sc.fener >= 3 ? [["Kateřina","Üç ışık parçası da elimde... Kapı açılıyor!"]] : S.sc.fener
+      ? [["","Kapı hâlâ kilitli. Üç ışık parçası gerek."]]
+      : [["","Kasabaya açılan eski bir kapı. Soğuk bir rüzgâr esiyor."],["Kateřina","Önce kayıp ışıkları bulmalıyım."]] }]
+  },
+  orman: {
+    name: 'Sisli Orman', quota: 2, goal: [176, 8], tint: 'rgba(10,40,50,.38)', fog: 1,
+    map: [
+      'TTTTTTTTTTTTTTTTTTTT',
+      'T..*.....T.....*...T',
+      'T....T.........T...T',
+      'T.....3..1..2......T',
+      'T..*............T..T',
+      'T.T......*.........T',
+      'T.........T....*...T',
+      'T..*...............T',
+      'T....T.......T.....T',
+      'T...........*......T',
+      'T.T.......T........T',
+      'T..*............*..T',
+      'T..................T',
+      'TTTTTTTTT..TTTTTTTTT'
+    ],
+    start: [10, 11],
+    exits: [{ r: [144, 214, 32, 10], to: 'fener', at: [10, 17] }, { r: [160, 0, 32, 12], to: 'gol', at: [13, 13] }],
+    npcs: [{ tx: 10, ty: 5, s: DOG, cb: () => { if (!S.solved) showSeq(); }, lines: () => { if (!S.solved) note('Monty fenerleri bir sırayla yakıyor. Aynı sırayla dokunmalıyım.'); return S.solved ? (S.sc.orman >= 2 ? DOG_C : DOG_F) : S.dogMet++ ? DOG_B : DOG_A; } }],
+    items: [{ id: 'isik4', tx: 17, ty: 6 }],
+    things: LAMP.map(([a, b], k) => ({ rect: [a * 16, b * 16, 16, 16], lines: () => lamp(k) }))
+  },
+  gol: {
+    name: 'Göl Kıyısı', quota: 1, goal: [308, 128], tint: 'rgba(20,60,110,.22)',
+    map: [
+      'TTTTTTTTTTTTTTTTTTTT',
+      'TwwwwwwwwwwwwwwwwwwT',
+      'TwwwwwwwwwwwwwwwwwwT',
+      'T..................T',
+      'T.........#####....T',
+      'T.........#...#....T',
+      'T.........##Z##....T',
+      'T..................T',
+      'T..*.P.............T',
+      'T..................T',
+      'T.####H####........T',
+      'T.#.....S.#........T',
+      'T.#.......#........T',
+      'T.##V#V#V##........T',
+      'TTTTTTTTTTTTT..TTTTT'
+    ],
+    start: [13, 13],
+    boxes: [[9, 8]], // itilebilir sandık
+    exits: [{ r: [208, 228, 32, 12], to: 'orman', at: [10, 1] }, { r: [304, 112, 16, 32], to: 'degirmen', at: [2, 8] }],
+    npcs: [],
+    items: [{ id: 'isik5', tx: 12, ty: 5 }],
+    things: [
+      { rect: [96, 160, 16, 16], off: () => S.flags.gate, lines: () => { note('Taş plakaya sandık itilirse parmaklıklı kapı açılabilir.'); return [["","Parmaklıklı bir kapı. Yanında taş bir plaka var."],["Kateřina","Ağır bir şeyi plakaya itmeliyim. Şu sandık olabilir!"]]; } },
+      { rect: [128, 176, 16, 16], lines: () => { note('Levye sırası soldan sağa: AÇIK, KAPALI, AÇIK. Aşağı inen levye AÇIK demek.'); return [["","Duvarda eski bir not: 'Gölün ışığı için levyeler: AÇIK, KAPALI, AÇIK.'"],["Kateřina","Soldan sağa... Aşağı inen levye açık demek olmalı."]]; } },
+      { rect: [64, 208, 16, 16], lines: () => lever(0) }, { rect: [96, 208, 16, 16], lines: () => lever(1) }, { rect: [128, 208, 16, 16], lines: () => lever(2) },
+      { rect: [192, 96, 16, 16], off: () => S.flags.zdoor, lines: () => {
+        if (S.inv.anahtar) { S.flags.zdoor = 1; S.inv.anahtar = 0; setTile(12, 6, 'D'); S.flash = .5; return [["","Anahtar tam uydu. Kayıkhanenin kapısı açıldı!"]]; }
+        note('Kayıkhanenin kapısı kilitli. Bir anahtar bulmalıyım.'); return [["","Kapı kilitli. Bir anahtar gerek."]]; } }
+    ],
+    tick() { // sahneye özel kurallar
+      if (!S.flags.gate && BOXES.some(b => MAP[b.ty][b.tx] === 'P')) { S.flags.gate = 1; setTile(6, 10, ','); S.flash = .4; toast('Bir yerde kapı gıcırdadı!'); note('Sandık plakaya oturunca parmaklıklı kapı açıldı.'); }
+      if (S.got.isik5 && !S.flags.end) { S.flags.end = 1; Dlg.open([["Kateřina","Beşinci parça! Işıklar biraz daha parlıyor..."],["Kateřina","Doğuda bir yol açıldı. Terk edilmiş değirmen orada olmalı."]]); }
+    }
+  },
+  degirmen: {
+    name: 'Terk Edilmiş Değirmen', quota: 2, dark: 1, get lights() { return S.flags.chest ? [[56, 136], [200, 136], [88, 56]] : [[56, 136], [200, 136]]; }, tint: 'rgba(30,20,50,.3)',
+    map: [
+      'TTTTTTTTTTTTTTTTTTTT',
+      'T..###############.T',
+      'T..#====MMM=######.T',
+      'T..#=======S######.T',
+      'T..#========#====#.T',
+      'T..##=======#===P#.T',
+      'T..#C=======#====#.T',
+      'T..##=======#====#.T',
+      'T,,D========D====#.T',
+      'T..#========#====#.T',
+      'T..#========#====#.T',
+      'T..#========#===P#.T',
+      'T..#========######.T',
+      'T..###############.T',
+      'TTTTTTTTTTTTTTTTTTTT'
+    ],
+    start: [2, 8],
+    guide() { // altın ok: sıradaki hedef; araya duvar girerse önce kapıyı gösterir
+      let t;
+      if (S.flags.chest) { if (S.flags.mend) return null; t = [88, 56]; } // gizli sandık: büyükannenin mektubu (alınınca ok kalkar)
+      else if (S.flags.mill && !S.got.isik6) t = [168, 56];
+      else if (S.flags.plates && !S.got.isik7) t = [248, 136];
+      else if (!S.flags.mill) t = !S.inv.disli ? [88, 184] : !S.inv.kayis ? (BOXES.some(b => b.tx === 5 && b.ty === 6) ? [88, 104] : [72, 108]) : [152, 40];
+      else if (!S.flags.plates) t = [200, 136];
+      else return null;
+      if (P.x < 56) return [56, 136]; // dışarıdaysan: önce değirmenin kapısı
+      if ((P.x > 208) !== (t[0] > 208)) return P.x > 208 && !S.flags.plates ? null : [200, 136]; // hedef diğer odadaysa önce aradaki kapı; ama depoya girince plaka bulmacası bitene kadar ok kalkar
+      return t;
+    },
+    boxes: [[5, 6], [15, 7], [15, 9]], // kayış sandığının önündeki sandık + depo odasındaki iki sandık
+    exits: [{ r: [16, 120, 10, 28], to: 'gol', at: [18, 8] }],
+    npcs: [],
+    items: [
+      { id: 'disli', tx: 5, ty: 11, s: GEAR, inv: 'disli', note: 'Karanlık köşede bir dişli buldum.' },
+      { id: 'isik6', tx: 10, ty: 3, show: () => S.flags.mill },
+      { id: 'isik7', tx: 15, ty: 8, show: () => S.flags.plates }
+    ],
+    things: [
+      { rect: [80, 48, 16, 16], off: () => !S.flags.chest || S.flags.mend, cb: () => { S.flash = 1; showEnd(); }, lines: () => { // gizli sandık: mektup burada
+        S.flags.mend = 1; setTile(5, 3, 'q'); S.flash = .6;
+        return [["Kateřina","Sandığın kilidi kendiliğinden açıldı... İçinde eski bir mektup var."],["","'Sevgili Kateřina, bu kasabanın ışıklarını yıllarca ben yaktım. Ben gidince sönecekleri belliydi.'"],["","'Işık parçalarını bilerek sakladım. Çünkü ışığı ancak onu arayan, emek verip bulan koruyabilir.'"],["Kateřina","Işıkları söndüren sır buymuş... Büyükannem fener bekçiliğini bana bırakmak istemiş."],["","Kateřina sekiz ışık parçasını fenere taşıdı. Kasabanın ışıkları birer birer yeniden yandı."]]; } },
+      { rect: [176, 48, 16, 16], lines: () => { note('Değirmencinin notu: dişli karanlık köşede, kayış sandıkta. Depo odasındaki iki taş plakaya birer sandık itersen zemin açılır.'); return [["","Değirmencinin notu: 'Çark için dişli ve kayış şart. Dişli karanlık köşede, kayış sandıkta. Depo odasındaki iki taş plakaya birer sandık itersen zemin açılır.'"]]; } },
+      { rect: [64, 96, 16, 16], off: () => S.inv.kayis || S.flags.mill, lines: () => {
+        if (BOXES.some(b => b.tx === 5 && b.ty === 6)) return [["","Sandığın önünde ağır bir sandık duruyor. Önce onu kenara itmeliyim."]];
+        S.inv.kayis = 1; note('Sandıktan bir değirmen kayışı aldım.'); return [["Kateřina","Sandığın içinde sağlam bir kayış var!"]]; } },
+      { rect: [128, 32, 48, 16], lines: () => {
+        if (S.flags.mill) return [["","Değirmen taşı yavaşça dönüyor."]];
+        if (S.inv.disli && S.inv.kayis) { S.flags.mill = 1; S.inv.disli = S.inv.kayis = 0; S.flash = .5; note('Dişli ve kayışı takınca değirmen taşı döndü, un çuvalından bir ışık parçası çıktı.'); return [["Kateřina","Dişliyi yerine oturttum, kayışı taktım..."],["","Taş döndü! Un çuvalından bir ışık parçası parladı."]]; }
+        note('Değirmenin mekanizmasında bir dişli ve bir kayış eksik.'); return [["","Değirmenin mekanizmasında bir dişli ve bir kayış eksik."]]; } }
+    ],
+    tick() {
+      if (!S.flags.intro) { S.flags.intro = 1; Dlg.open([["Kateřina","Çok karanlık... Sadece çevremi görebiliyorum."],["","Duvarlardan hafif bir fısıltı geliyor: '...ışıkları... geri... getir...'"],["Kateřina","Değirmenin çarkı durmuş. Mekanizmayı çalıştırmak için bir dişli ve bir kayış bulmalıyım."],["","İpucu: Altın ok seni sıradaki hedefe götürür. Duvardaki notu da oku."]]); return; }
+      if (P.x > 208 && !S.flags.room) { S.flags.room = 1; note('Depo odasında iki taş plaka var. İki sandığı da plakaların üzerine itmeliyim.'); Dlg.open([["Kateřina","Zeminde iki parlak taş plaka var. Yanlarında da iki ağır sandık duruyor."],["Kateřina","Sandıkları plakaların üzerine itmeliyim. Sandığa doğru yürürsem itebiliyorum."],["","İpucu: Bir sandığı köşeye sıkıştırırsan odadan çıkıp tekrar girmen yeterli, sandıklar yerine döner."]]); return; }
+      if (!S.flags.plates && BOXES.filter(b => MAP[b.ty][b.tx] === 'P').length >= 2) { S.flags.plates = 1; S.flash = .5; toast('Zeminden bir kilit sesi geldi!'); note('İki plaka da dolunca depo odasında bir ışık parçası belirdi.'); }
+      if (S.sc.degirmen >= 2 && !S.flags.chest) { // son parça bulundu: salonda gizli bir sandık belirir
+        S.flags.chest = 1; BOXES = BOXES.filter(b => !(b.tx === 5 && b.ty === 3)); setTile(5, 3, 'Q'); S.flash = .6;
+        note('Son ışık parçasını bulunca salonun kuzeybatı köşesinde gizli bir sandık belirdi.');
+        Dlg.open([["Kateřina","Bir şey kıpırdadı! Salonun köşesinde bir sandık belirdi."],["Kateřina","Büyükannemin bıraktığı bir şey olmalı. Gidip bakmalıyım."],["","İpucu: Altın ok seni sandığa götürür."]]);
+      }
+    }
+  }
+};
+
+/* ===== 6) OYUN DURUMU ===== */
+const S = { shards: 0, met: 0, metC: 0, got: {}, flash: 0, seq: 0, solved: 0, inv: {}, flags: {}, notes: [], lv: [0, 0, 0], sc: { fener: 0, orman: 0, gol: 0, degirmen: 0 }, bk: [0, 0, 0], dogMet: 0, pi: 0, off: 0, sim: null, seen: 0 };
+const P = { x: 0, y: 0, dir: 0, t: 0, pt: 0 };         // x,y = ayakların altı; pt = kutu itme sayacı
+const cam = { x: 0, y: 0 };
+let MAP, NPCS, ITEMS, THINGS, SC, SID, BOXES = [];
+function loadScene(id, at) { // at: varış karesi (verilmezse sahnenin başlangıcı)
+  const sc = SC = SCENES[id]; SID = id;
+  MAP = sc.map.slice(); // kopya: harita değişince asıl veri bozulmasın
+  BOXES = (sc.boxes || []).map(([a, b]) => ({ tx: a, ty: b }));
+  NPCS = sc.npcs.map(n => ({ ...n, x: n.tx * 16 + 8, y: n.ty * 16 + 13 }));
+  ITEMS = sc.items.filter(i => !S.got[i.id]).map(i => ({ ...i, x: i.tx * 16 + 8, y: i.ty * 16 + 8 }));
+  THINGS = sc.things;
+  const s = at || sc.start; P.x = s[0] * 16 + 8; P.y = s[1] * 16 + 14; P.t = 0; P.pt = 0;
+  if (id === 'orman') { S.sim = null; S.pi = 0; if (S.solved) LAMP.forEach(([a, b], k) => setTile(a, b, k + 4)); if (S.sc.orman >= 2) { setTile(10, 0, '.'); setTile(11, 0, '.'); } }
+  if (id === 'fener') { S.bk.forEach((v, k) => setTile(4 + k, 3, 'k789'[v])); if (S.flags.fire) { setTile(9, 3, 'l'); setTile(10, 3, 'l'); } if (S.sc.fener >= 3) { setTile(9, 18, ','); setTile(10, 18, ','); } }
+  if (id === 'degirmen' && S.flags.chest) setTile(5, 3, 'Q');
+  if (id === 'gol') { S.lv.forEach((v, k) => setTile(4 + 2 * k, 13, v ? 'v' : 'V')); if (S.flags.gate) setTile(6, 10, ','); if (S.flags.zdoor) setTile(12, 6, 'D'); if (S.sc.gol >= 1) { setTile(19, 7, '.'); setTile(19, 8, '.'); } }
+  setCount();
+}
+let EXLOCK = []; // girdiğin kapı: ondan uzaklaşana kadar kilitli (aynı yöne basılı tutarken geri zıplamayı önler)
+const go = (id, at) => { loadScene(id, at); S.flash = .6; toast(SCENES[id].name); EXLOCK = (SC.exits || []).filter(e => rd(e.r, P.x, P.y) < 32); }; // sahne geçişi
+function setTile(a, b, ch) { MAP[b] = MAP[b].slice(0, a) + ch + MAP[b].slice(a + 1); }
+const SEQ = [2, 0, 1, 2, 0]; // köpeğin gösterdiği sıra: sarı, kırmızı, mavi, sarı, kırmızı
+const lampTile = (k, on) => setTile(LAMP[k][0], LAMP[k][1], k + (on ? 4 : 1));
+function showSeq() { S.sim = { t: -1.4 }; S.pi = 0; S.seen = 1; } // sıra gösterimi (kısa bekleme ile)
+function simTick(dt) { // fenerlerin yanıp sönmesi: gösterim ve dokunma geri bildirimi
+  if (SC !== SCENES.orman || S.solved) return;
+  if (S.sim) {
+    const m = S.sim; m.t += dt; const st = Math.floor(m.t / .8), on = m.t % .8 < .5;
+    LAMP.forEach((_, k) => lampTile(k, st >= 0 && st < SEQ.length && on && SEQ[st] === k));
+    if (st >= SEQ.length) S.sim = null;
+  } else if (S.off > 0 && (S.off -= dt) <= 0) LAMP.forEach((_, k) => lampTile(k, false));
+}
+function lamp(k) { // Fener bulmacası: köpeğin gösterdiği sırayı tekrarla
+  if (S.solved) return [["", "Fener sıcacık yanıyor."]];
+  if (!S.seen) { toast('Önce köpekle konuşmalıyım.'); return null; }
+  if (S.sim) { toast('Önce izle!'); return null; }
+  if (k !== SEQ[S.pi]) { toast('Yanlış sıra! Baştan izle.'); showSeq(); return null; }
+  lampTile(k, true); S.off = .45;
+  if (++S.pi < SEQ.length) { toast(S.pi + '/' + SEQ.length); return null; }
+  S.solved = 1; LAMP.forEach((_, j) => lampTile(j, true)); gain();
+  return [["Kateřina", "Doğru sıra! Fenerlerin ortasında bir ışık parçası doğdu."]];
+}
+function shelf(k) { // Kitaplık: her dokunuşta renk değişir (boş → kırmızı → mavi → sarı). Doğru: kırmızı, sarı, mavi
+  S.bk[k] = (S.bk[k] + 1) % 4; setTile(4 + k, 3, 'k789'[S.bk[k]]);
+  if (!S.flags.shelf && S.bk.join('') === '132') { S.flags.shelf = 1; S.flash = .5; note('Kitaplar doğru sıraya girince raftan bir ışık parçası belirdi.'); return [["", "Kitaplar yerine oturdu! Raftan bir ışık parçası parladı."]]; }
+  return null;
+}
+function lever(k) { // Levye: indir/kaldır. Doğru kombinasyon (AÇIK, KAPALI, AÇIK) anahtarı düşürür
+  S.lv[k] ^= 1; setTile(4 + 2 * k, 13, S.lv[k] ? 'v' : 'V');
+  if (S.lv.join('') === '101' && !S.inv.anahtar && !S.flags.zdoor) { S.inv.anahtar = 1; S.flash = .5; note('Levyeler doğru sıradayken duvardan kayıkhane anahtarı düştü.'); return [["", "Klik! Duvardaki gizli bölmeden bir anahtar düştü."]]; }
+  return null;
+}
+function solidAt(x, y) {
+  const tx = Math.floor(x / 16), ty = Math.floor(y / 16);
+  if (ty < 0 || ty >= MAP.length || tx < 0 || tx >= MAP[0].length) return true;
+  if (BOXES.some(b => b.tx === tx && b.ty === ty)) return true;
+  return SOLID.includes(MAP[ty][tx]);
+}
+function hit(x, y) { // Kateřina'nın ayak kutusu 8x5
+  const bx = x - 4, by = y - 5;
+  for (const [a, b] of [[bx,by],[bx+7.9,by],[bx,by+4.9],[bx+7.9,by+4.9]]) if (solidAt(a, b)) return true;
+  return NPCS.some(n => bx < n.x + 5 && bx + 8 > n.x - 5 && by < n.y && by + 5 > n.y - 5);
+}
+const rd = (r, x, y) => Math.hypot(Math.max(r[0] - x, 0, x - r[0] - r[2]), Math.max(r[1] - y, 0, y - r[1] - r[3]));
+const targets = () => [...NPCS.map(n => ({ rect: [n.x - 6, n.y - 10, 12, 11], lines: n.lines, cb: n.cb })), ...THINGS.filter(t => !(t.off && t.off()))];
+function nearTarget() { let b = null, bd = 10; for (const t of targets()) { const d = rd(t.rect, P.x, P.y - 5); if (d < bd) { bd = d; b = t; } } return b; }
+
+/* ===== 7) DİYALOG, DEFTER VE ENVANTER ===== */
+const dlg = $('dlg'), dn = $('dn'), dtxt = $('dtxt'), arrow = $('arrow');
+const Dlg = {
+  q: [], i: 0, n: 0,
+  open(q, cb) { this.q = q; this.cb = cb; this.i = 0; mode = 'dialog'; dlg.hidden = false; this.show(); },
+  show() { const l = this.q[this.i]; dn.textContent = l[0]; dn.hidden = !l[0]; dtxt.textContent = ''; this.n = 0; arrow.style.visibility = 'hidden'; },
+  update(dt) { // yazı harf harf akar
+    const t = this.q[this.i][1];
+    if (this.n < t.length) { this.n = Math.min(t.length, this.n + dt * 42); dtxt.textContent = t.slice(0, Math.floor(this.n)); }
+    else arrow.style.visibility = 'visible';
+  },
+  next() {
+    const t = this.q[this.i][1];
+    if (this.n < t.length) { this.n = t.length; dtxt.textContent = t; arrow.style.visibility = 'visible'; return; }  // yazı bitmediyse tamamla
+    if (++this.i >= this.q.length) { dlg.hidden = true; mode = 'play'; const f = this.cb; this.cb = null; if (f) f(); } else this.show();
+  }
+};
+let tt;
+function toast(m) { const e = $('toast'); e.textContent = m; e.classList.add('show'); clearTimeout(tt); tt = setTimeout(() => e.classList.remove('show'), 2600); }
+function setCount() { const c = $('cnt'); $('rg').textContent = SC.name; c.textContent = S.sc[SID] + '/' + SC.quota; c.classList.remove('b'); void c.offsetWidth; c.classList.add('b'); }
+function curGoal() { // ok hedefi: sahnede rehber varsa o, yoksa bölge bitince çıkış
+  if (SC.guide) return SC.guide();
+  return SC.goal && S.sc[SID] >= SC.quota ? SC.goal : null;
+}
+let lastObj = '';
+function updObj() { // sahnenin görev satırları (varsa) HUD altında gösterilir
+  const t = SC.obj ? SC.obj() : '';
+  if (t !== lastObj) { lastObj = t; const e = $('obj'); e.textContent = t; e.hidden = !t; }
+}
+const vis = () => ITEMS.filter(i => !i.show || i.show()); // görünen ışık parçaları
+function gain() { // ışık parçası kazan: toplam + bölge sayacı
+  S.shards++; S.sc[SID]++; S.flash = .6; setCount();
+  const done = S.sc[SID] >= SC.quota;
+  if (SID === 'orman' && done) { setTile(10, 0, '.'); setTile(11, 0, '.'); }
+  if (SID === 'gol' && done) { setTile(19, 7, '.'); setTile(19, 8, '.'); } // doğuya giden yol açılır
+  if (SID === 'fener' && done) { setTile(9, 18, ','); setTile(10, 18, ','); } // bahçe kapısı açılır // kuzeye giden yol açılır
+  toast(done && SC.goal ? 'Bölge tamam! Altın ok yolu gösteriyor.' : 'Bir ışık parçası! (' + S.sc[SID] + '/' + SC.quota + ')');
+}
+const nb = $('nb'), ITEMNAME = { anahtar: 'Kayıkhane anahtarı', kibrit: 'Kibrit kutusu', odun: 'Odun', disli: 'Dişli', kayis: 'Değirmen kayışı' };
+function note(t) { if (!S.notes.includes(t)) { S.notes.push(t); toast('Deftere not yazıldı'); } } // ipucu defteri
+function nbToggle() { // Defteri aç/kapat: eşyalar + ipuçları
+  if (mode === 'notebook') { nb.hidden = true; mode = 'play'; }
+  else if (mode === 'play') {
+    mode = 'notebook'; nb.hidden = false;
+    nb.textContent = "KATEŘINA'NIN DEFTERİ\n\nİpuçları:\n" + (S.notes.map(n => '• ' + n).join('\n') || '(henüz yok)') + '\n\n[kapatmak için dokun]';
+  }
+}
+$('nbb').addEventListener('pointerdown', e => { e.preventDefault(); nbToggle(); });
+nb.addEventListener('pointerdown', e => { e.preventDefault(); nbToggle(); });
+
+/* ===== 8) GİRDİ: joystick, buton, klavye ===== */
+const joy = { x: 0, y: 0 }, keys = { l: 0, r: 0, u: 0, d: 0 };
+const base = $('joy'), stick = $('stick'); let jid = null;
+function jmove(e) {
+  const r = base.getBoundingClientRect(), R_ = r.width / 2 - 8;
+  let dx = e.clientX - (r.left + r.width / 2), dy = e.clientY - (r.top + r.height / 2); const d = Math.hypot(dx, dy);
+  if (d > R_) { dx *= R_ / d; dy *= R_ / d; }
+  joy.x = dx / R_; joy.y = dy / R_; stick.style.transform = `translate(${dx}px,${dy}px)`;
+}
+base.addEventListener('pointerdown', e => { jid = e.pointerId; base.setPointerCapture(jid); jmove(e); e.preventDefault(); });
+base.addEventListener('pointermove', e => { if (e.pointerId === jid) jmove(e); });
+const jend = e => { if (e.pointerId === jid) { jid = null; joy.x = joy.y = 0; stick.style.transform = ''; } };
+base.addEventListener('pointerup', jend); base.addEventListener('pointercancel', jend);
+
+function act() { // Etkileşim: başlat / diyaloğu ilerlet / defteri kapat / yakındakiyle konuş
+  if (mode === 'title') start();
+  else if (mode === 'dialog') Dlg.next();
+  else if (mode === 'notebook') nbToggle();
+  else if (mode === 'play') { const t = nearTarget(); if (t) { const L = t.lines(); if (L) Dlg.open(L, t.cb); } }
+}
+$('act').addEventListener('pointerdown', e => { e.preventDefault(); act(); });
+dlg.addEventListener('pointerdown', e => { e.preventDefault(); act(); });
+const KM = { ArrowLeft:'l', a:'l', A:'l', ArrowRight:'r', d:'r', D:'r', ArrowUp:'u', w:'u', W:'u', ArrowDown:'d', s:'d', S:'d' };
+addEventListener('keydown', e => {
+  if (KM[e.key]) { keys[KM[e.key]] = 1; e.preventDefault(); }
+  else if (['e','E','Enter',' '].includes(e.key)) { if (!e.repeat) act(); e.preventDefault(); }
+  else if (e.key === 'n' || e.key === 'N') { if (!e.repeat) nbToggle(); }
+});
+addEventListener('keyup', e => { if (KM[e.key]) keys[KM[e.key]] = 0; });
+['gesturestart', 'contextmenu'].forEach(ev => document.addEventListener(ev, e => e.preventDefault()));
+
+function inputVec() {
+  const x = joy.x + keys.r - keys.l, y = joy.y + keys.d - keys.u, m = Math.hypot(x, y);
+  if (m < .3) return [0, 0];
+  return m > 1 ? [x / m, y / m] : [x, y];
+}
+
+/* ===== 9) GÜNCELLEME ===== */
+function update(dt) {
+  T += dt;
+  if (S.flash > 0) S.flash -= dt;
+  simTick(dt); updObj();
+  if (mode === 'play') {
+    const [ix, iy] = inputVec();
+    let pushing = false;
+    if (ix || iy) {
+      const sp = 56 * dt;
+      let nx = P.x + ix * sp; if (!hit(nx, P.y)) P.x = nx;      // eksenleri ayrı dene: duvara sürtünerek kayar
+      let ny = P.y + iy * sp; if (!hit(P.x, ny)) P.y = ny;
+      P.dir = Math.abs(ix) > Math.abs(iy) ? (ix < 0 ? 2 : 3) : (iy < 0 ? 1 : 0);
+      P.t += dt;
+      // Sandık itme: sandığa doğru 0.3 sn yürürsen 1 kare kayar (arkası boşsa)
+      const dx = Math.abs(ix) > Math.abs(iy) ? Math.sign(ix) : 0, dy = dx ? 0 : Math.sign(iy);
+      const b = BOXES.find(o => o.tx === Math.floor((P.x + dx * 8) / 16) && o.ty === Math.floor((P.y - 3 + dy * 6) / 16));
+      if (b && !solidAt((b.tx + dx) * 16 + 8, (b.ty + dy) * 16 + 8)) {
+        pushing = true; P.pt += dt;
+        if (P.pt > .3) { b.tx += dx; b.ty += dy; P.pt = 0; }
+      }
+    } else P.t = 0;
+    if (!pushing) P.pt = 0;
+    EXLOCK = EXLOCK.filter(e => rd(e.r, P.x, P.y) < 32); // kapıdan yeterince uzaklaşınca kilit açılır
+    for (const e of SC.exits || []) if (!EXLOCK.includes(e) && (!e.if || e.if()) && P.x > e.r[0] && P.x < e.r[0] + e.r[2] && P.y > e.r[1] && P.y < e.r[1] + e.r[3]) { go(e.to, e.at); return; }
+    for (const it of vis()) if (Math.hypot(P.x - it.x, P.y - 6 - it.y) < 10) { // ışık parçası topla
+      S.got[it.id] = 1; ITEMS = ITEMS.filter(i => i !== it); if (it.inv) { S.inv[it.inv] = 1; note(it.note); toast(ITEMNAME[it.inv] + ' aldım!'); } else gain();
+      
+    }
+    if (SC.tick) SC.tick();
+  } else if (mode === 'dialog') { P.t = 0; Dlg.update(dt); }
+}
+
+/* ===== 10) ÇİZİM ===== */
+function draw() {
+  const mw = MAP[0].length * 16, mh = MAP.length * 16;
+  const rx = Math.round(P.x), ry = Math.round(P.y); // kamera ve sprite AYNI tam sayı konumdan hesaplanır (ayrı ayrı yuvarlanırsa karakter 1 piksel titrer)
+  cam.x = Math.round(mw <= W ? (mw - W) / 2 : clamp(rx - W / 2, 0, mw - W)); // kamera Kateřina'yı takip eder
+  cam.y = Math.round(mh <= H ? (mh - H) / 2 : clamp(ry - 8 - H / 2, 0, mh - H));
+  R(ctx, '#14101f', 0, 0, W, H);
+  const x0 = Math.max(0, cam.x >> 4), x1 = Math.min(MAP[0].length - 1, (cam.x + W) >> 4), y0 = Math.max(0, cam.y >> 4), y1 = Math.min(MAP.length - 1, (cam.y + H) >> 4);
+  for (let ty = y0; ty <= y1; ty++) for (let tx = x0; tx <= x1; tx++) { const t = TL[MAP[ty][tx]]; if (t) ctx.drawImage(t, tx * 16 - cam.x, ty * 16 - cam.y); }
+  // Varlıklar alttakiler öne gelecek şekilde sıralanıp çizilir
+  const fr = P.t > 0 ? [1, 0, 2, 0][Math.floor(P.t / .14) % 4] : 0;
+  const E = [{ y: P.y, f: () => ctx.drawImage(KATS[P.dir][fr], rx - 6 - cam.x, ry - 15 - cam.y) }];
+  NPCS.forEach(n => E.push({ y: n.y, f: () => { const s = n.s || CATS[Math.floor(T * 2) % 2]; ctx.drawImage(s, Math.round(n.x - s.width / 2 - cam.x), Math.round(n.y - s.height + 1 - cam.y)); } }));
+  vis().forEach(i => E.push({ y: i.y, f: () => ctx.drawImage(i.s || SH, Math.round(i.x - 4 - cam.x), Math.round(i.y - 4 - cam.y + Math.sin(T * 3) * 2)) }));
+  BOXES.forEach(b => E.push({ y: b.ty * 16 + 14, f: () => ctx.drawImage(TL.X, b.tx * 16 - cam.x, b.ty * 16 - cam.y) }));
+  E.sort((a, b) => a.y - b.y).forEach(e => e.f());
+  R(ctx, SC.tint, 0, 0, W, H); // akşam tonu
+  if (SC.fog) { ctx.fillStyle = 'rgba(225,240,240,.12)'; for (let k = 0; k < 7; k++) ctx.fillRect(((T * 5 + k * 47) % (W + 70)) - 70, (k * 41 + 12) % H, 70, 12); } // sis
+  if (SC.dark) { // karanlık sahne: sadece Kateřina'nın çevresi aydınlık
+    const px = rx - cam.x, py = ry - 8 - cam.y, g = ctx.createRadialGradient(px, py, 36, px, py, 100);
+    g.addColorStop(0, 'rgba(8,5,18,0)'); g.addColorStop(1, 'rgba(8,5,18,.85)'); ctx.fillStyle = g; ctx.fillRect(0, 0, W, H);
+  }
+  ctx.globalCompositeOperation = 'lighter';                                  // ışık parçasının parıltısı
+  vis().forEach(i => { const a = (SC.dark ? .3 : .1) + .05 * Math.sin(T * 4); ctx.fillStyle = '#ffe98a'; [14, 9].forEach((r, k) => { ctx.globalAlpha = a * (k + 1); ctx.beginPath(); ctx.arc(i.x - cam.x, i.y - cam.y, r, 0, 6.3); ctx.fill(); }); });
+  (SC.lights || []).forEach(([lx, ly]) => { ctx.fillStyle = '#ffb347'; [16, 10].forEach((r, k) => { ctx.globalAlpha = .12 * (k + 1); ctx.beginPath(); ctx.arc(lx - cam.x, ly - cam.y, r, 0, 6.3); ctx.fill(); }); });
+  ctx.globalAlpha = 1; ctx.globalCompositeOperation = 'source-over';
+  if (mode === 'play') { // yakındaki kişi/nesnenin üstünde "!" belirir
+    const nt = nearTarget();
+    if (nt) { const ix = Math.round(nt.rect[0] + nt.rect[2] / 2 - cam.x), iy = Math.round(nt.rect[1] - 10 - cam.y + Math.sin(T * 6)); R(ctx, '#fff3df', ix - 3, iy, 6, 8); R(ctx, '#2b1b2e', ix - 1, iy + 1, 2, 4); R(ctx, '#2b1b2e', ix - 1, iy + 6, 2, 1); }
+  }
+  const GL = mode === 'play' && curGoal();
+  if (GL) { // bölge bitince yolu gösteren altın ok
+    const gx = GL[0] - cam.x, gy = GL[1] - cam.y, sx = clamp(gx, 12, W - 12), sy = clamp(gy, 26, H - 12);
+    const inside = gx === sx && gy === sy;
+    ctx.save(); ctx.translate(Math.round(sx), Math.round(inside ? sy - 12 + Math.sin(T * 6) * 2 : sy)); ctx.rotate(inside ? Math.PI / 2 : Math.atan2(gy - sy, gx - sx));
+    ctx.fillStyle = '#2b1b2e'; ctx.beginPath(); ctx.moveTo(8, 0); ctx.lineTo(-5, -7); ctx.lineTo(-5, 7); ctx.fill();
+    ctx.fillStyle = '#ffd84a'; ctx.beginPath(); ctx.moveTo(5, 0); ctx.lineTo(-3, -4); ctx.lineTo(-3, 4); ctx.fill(); ctx.restore();
+  }
+  if (S.flash > 0) R(ctx, `rgba(255,248,214,${Math.min(.6, S.flash)})`, 0, 0, W, H);
+}
+
+/* ===== 11) EKRAN BOYUTU VE ANA DÖNGÜ ===== */
+function resize() { // küçük mantıksal çözünürlük, tam sayı katıyla büyütülür (net piksel)
+  const r = view.getBoundingClientRect(); if (!r.width) return;
+  scale = clamp(Math.floor(r.width / 120), 2, 4);
+  W = Math.ceil(r.width / scale); H = Math.ceil(r.height / scale);
+  cv.width = W; cv.height = H; cv.style.width = W * scale + 'px'; cv.style.height = H * scale + 'px';
+  ctx.imageSmoothingEnabled = false;
+}
+new ResizeObserver(resize).observe(view); addEventListener('resize', resize);
+
+function start() { if (mode !== 'title') return; $('title').hidden = true; Dlg.open(INTRO); }
+$('go').addEventListener('click', start);
+$('tc').getContext('2d').drawImage(KATS[0][0], 0, 0); // başlık ekranındaki Kateřina
+
+function showEnd() { // oyun sonu ekranı
+  mode = 'end'; $('endp').textContent = S.shards + ' ışık parçasının hepsini buldun. Kasabanın ışıkları yeniden yandı. Oynadığın için teşekkürler!'; $('end').hidden = false;
+}
+$('again').addEventListener('click', () => location.reload());
+
+let last = 0;
+function loop(t) { const dt = Math.min(.05, (t - last) / 1000 || 0); last = t; update(dt); draw(); requestAnimationFrame(loop); }
+loadScene('fener'); resize(); requestAnimationFrame(loop);
+</script>
+</body>
+</html>
