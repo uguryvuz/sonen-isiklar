@@ -267,7 +267,7 @@ const SCENES = {
     npcs: [],
     items: [{ id: 'isik5', tx: 12, ty: 5 }],
     things: [
-      { rect: [96, 160, 16, 16], off: () => S.flags.gate, lines: () => { note('Taş plakaya sandık itilirse parmaklıklı kapı açılabilir.'); return [["","Parmaklıklı bir kapı. Yanında taş bir plaka var."],["Kateřina","Ağır bir şeyi plakaya itmeliyim. Şu sandık olabilir!"]]; } },
+      { rect: [96, 160, 16, 16], off: () => S.flags.gate, lines: () => { note('Taş plakaya sandık itilirse parmaklıklı kapı açılabilir. Sandık köşeye sıkışırsa bölgeden çıkıp geri girince yerine döner.'); return [["","Parmaklıklı bir kapı. Yanında taş bir plaka var."],["Kateřina","Ağır bir şeyi plakaya itmeliyim. Şu sandık olabilir!"]]; } },
       { rect: [128, 176, 16, 16], lines: () => { note('Levye sırası soldan sağa: AÇIK, KAPALI, AÇIK. Aşağı inen levye AÇIK demek.'); return [["","Duvarda eski bir not: 'Gölün ışığı için levyeler: AÇIK, KAPALI, AÇIK.'"],["Kateřina","Soldan sağa... Aşağı inen levye açık demek olmalı."]]; } },
       { rect: [64, 208, 16, 16], lines: () => lever(0) }, { rect: [96, 208, 16, 16], lines: () => lever(1) }, { rect: [128, 208, 16, 16], lines: () => lever(2) },
       { rect: [192, 96, 16, 16], off: () => S.flags.zdoor, lines: () => {
@@ -535,7 +535,8 @@ function update(dt) {
       // Sandık itme: sandığa doğru 0.3 sn yürürsen 1 kare kayar (arkası boşsa). İterken yan kayma kilitlenir, başparmak hafif eğilse de sandık düz gider
       const [dx, dy] = DIRV[P.dir];
       const b = BOXES.find(o => o.tx === Math.floor((P.x + dx * 8) / 16) && o.ty === Math.floor((P.y - 3 + dy * 6) / 16));
-      const canPush = b && !solidAt((b.tx + dx) * 16 + 8, (b.ty + dy) * 16 + 8);
+      const doorNear = b && [-1, 0, 1].some(k => (MAP[b.ty + dy] || '')[b.tx + dx + k] === 'D'); // sandık kapı karesine ve yanlarına itilemez
+      const canPush = b && !doorNear && !solidAt((b.tx + dx) * 16 + 8, (b.ty + dy) * 16 + 8);
       if (canPush) { if (dx) iy = 0; else ix = 0; }
       const sp = 56 * dt;
       let nx = P.x + ix * sp; if (!hit(nx, P.y)) P.x = nx;      // eksenleri ayrı dene: duvara sürtünerek kayar
@@ -630,10 +631,11 @@ $('again').addEventListener('click', () => location.reload());
 let last = 0;
 const rotMQ = matchMedia('(orientation: landscape) and (max-height: 520px) and (pointer: coarse)'); // CSS'teki "telefonu dik tut" uyarısıyla aynı koşul
 function loop(t) {
+  requestAnimationFrame(loop);
+  if (t - last < 10) return; // 90-120 Hz ekranlarda ~60 kare/sn'ye sınırla (pil, ısınma)
   const dt = Math.min(.05, (t - last) / 1000 || 0); last = t;
   if (rotMQ.matches) resetInput(); // yatay ekranda oyun durur
-  else { update(dt); draw(); }
-  requestAnimationFrame(loop);
+  else { update(dt); if (mode !== 'title' && mode !== 'end' && mode !== 'notebook') draw(); } // ekranı kapatan katmanların arkasında çizme
 }
 loadScene('fener'); resize(); requestAnimationFrame(loop);
 </script>
